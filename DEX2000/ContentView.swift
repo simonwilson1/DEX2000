@@ -16,6 +16,7 @@ struct ContentView: View {
         animation: .default)
     private var items: FetchedResults<Item>
 
+
     var body: some View {
         NavigationView {
             List {
@@ -24,6 +25,7 @@ struct ContentView: View {
                         Text("Item at \(item.timestamp!, formatter: itemFormatter)")
                     } label: {
                         Text(item.timestamp!, formatter: itemFormatter)
+                        
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -38,7 +40,6 @@ struct ContentView: View {
                     }
                 }
             }
-            Text("Select an item")
         }
     }
 
