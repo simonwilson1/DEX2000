@@ -5,63 +5,30 @@
 //  Created by Simon Wilson on 21/02/2025.
 //
 
-import CoreData
+import SwiftData
+import Foundation
 
+@MainActor
 struct PersistenceController {
-    static let shared = PersistenceController()
     
     static var previewPokemon: Pokemon {
-        let context = PersistenceController.preview.container.viewContext
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         
-        let fetchRequest: NSFetchRequest<Pokemon> = Pokemon.fetchRequest()
-        fetchRequest.fetchLimit = 1
+        let pokemonData = try! Data(contentsOf: Bundle.main.url(forResource: "samplepokemon", withExtension: "json")!)
         
-        let results = try! context.fetch(fetchRequest)
+        let pokemon = try! decoder.decode(Pokemon.self, from: pokemonData)
         
-        return results.first!
+        return pokemon
     }
     
-    static let preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
-        let newPokemon = Pokemon(context: viewContext)
-        newPokemon.id = 1
-        newPokemon.name = "bulbasaur"
-        newPokemon.types = ["grass", "poison"]
-        newPokemon.hp = 45
-        newPokemon.attack = 49
-        newPokemon.defense = 49
-        newPokemon.specialAttack = 65
-        newPokemon.specialDefense = 65
-        newPokemon.speed = 65
-        newPokemon.spriteURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png")
-        newPokemon.shinyURL = URL(string: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png")
+    static let preview: ModelContainer = {
+        let container = try! ModelContainer(for: Pokemon.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         
+        container.mainContext.insert(previewPokemon)
         
-        do {
-            try viewContext.save()
-        } catch {
-            print("error: \(error.localizedDescription)")
-        }
-        return result
+        return container
     }()
     
-    let container: NSPersistentContainer
-    
-    init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "DEX2000")
-        if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
-        } else {
-            container.persistentStoreDescriptions.first!.url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.uk.co.simonhanwilson.DexGroup")!.appending(path: "Dex2000.sqlite")
-        }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                
-                print("error: \(error.localizedDescription)")
-            }
-        })
-        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
-        container.viewContext.automaticallyMergesChangesFromParent = true
-    }
+
 }
