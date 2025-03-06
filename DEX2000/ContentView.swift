@@ -18,23 +18,19 @@ struct ContentView: View {
 
     let fetcher = FetchedService()
     
-    private var dynamicPredicate: NSPredicate {
+    private var dynamicPredicate: Predicate<Pokemon> {
         
-        var predicates: [NSPredicate] = []
-        
-        // Search predicate
-        if !searchText.isEmpty {
-            predicates.append(NSPredicate(format: "name contains[c] %@", searchText))
+        #Predicate<Pokemon> { pokemon in
+            if filterByFavorites && !searchText.isEmpty {
+                pokemon.favorite && pokemon.name.localizedStandardContains(searchText)
+            } else if !searchText.isEmpty {
+                pokemon.name.localizedStandardContains(searchText)
+            } else if filterByFavorites {
+                pokemon.favorite
+            } else {
+                true
+            }
         }
-        
-        // filter by favorite predicate
-        
-        if filterByFavorites {
-            predicates.append(NSPredicate(format: "favorite == %d", true))
-        }
-        
-        // combine predicates
-        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         
     }
 
@@ -60,7 +56,7 @@ struct ContentView: View {
             NavigationStack {
                 List {
                     Section {
-                        ForEach(pokedex) { pokemon in
+                        ForEach((try? pokedex.filter(dynamicPredicate))  ?? pokedex) { pokemon in
                             NavigationLink(value: pokemon) {
                                 if pokemon.sprite == nil {
                                     AsyncImage(url: pokemon.spriteURL) { image in
@@ -139,13 +135,16 @@ struct ContentView: View {
                 .navigationTitle("Pokedex")
                 .searchable(text: $searchText, prompt: "Find a Pokemon")
                 .autocorrectionDisabled()
+                .animation(.default, value: searchText)
                 .navigationDestination(for: Pokemon.self, destination: { pokemon in
                     PokemonDetail(pokemon: pokemon)
                 })
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
-                            filterByFavorites.toggle()
+                            withAnimation {
+                                filterByFavorites.toggle()
+                            }
                         } label: {
                             Label("Filter by Favorites", systemImage: filterByFavorites ? "star.fill" : "star")
                         }
