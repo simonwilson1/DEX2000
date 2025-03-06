@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 struct FetchedService {
     
     enum FetchedError: Error {
